@@ -1,6 +1,6 @@
 # sat_app
 
-A new Flutter project.
+Flutter project. Mobile application to help students to prepare for internation exam DSAT
 
 ## Getting Started
 
