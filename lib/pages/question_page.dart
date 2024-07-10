@@ -3,7 +3,9 @@
 import 'package:flutter/material.dart';
 
 class QuestionPage extends StatefulWidget {
-  const QuestionPage({super.key});
+  final String
+      questionType; // Эту переменную юзаешь короче чтобы отправить тип вопроса который нужен
+  const QuestionPage({super.key, required this.questionType});
 
   @override
   State<QuestionPage> createState() => _QuestionPageState();
@@ -131,6 +133,12 @@ between the subject and the verb.''';
             icon: Icon(Icons.info_outline),
             onPressed: () {
               showExplanation(); // Show explanation dialog when pressed
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.arrow_right),
+            onPressed: () {
+              //TODo Сделай короче тут функцию которая перекидывает в след вопрос
             },
           ),
         ],

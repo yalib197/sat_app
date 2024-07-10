@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:sat_app/pages/base_page.dart';
-import 'package:sat_app/pages/home_page.dart';
-import 'package:sat_app/pages/question_page.dart';
 
 void main() {
   runApp(const MyApp());
