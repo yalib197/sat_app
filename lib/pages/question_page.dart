@@ -93,7 +93,7 @@ class _QuestionPageState extends State<QuestionPage> {
 
   Future<String?> getHint(String questionText, Map<String, String> answers,
       String correctAnswer, String explanation) async {
-    const apiKey = 'AIzaSyBUf_m1Fe5_VhKoCZLoBfFjpfqj4rqLUXA';
+    const apiKey = 'YOUR API KEY';
     final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey);
     final content = [
       Content.text(
