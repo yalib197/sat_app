@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:sat_app/pages/question_page.dart';
 
-class QuestionTypesPage extends StatelessWidget {
+class QuestionTypesPage extends StatefulWidget {
   final bool showMathQuestions; // Variable to determine which questions to show
   const QuestionTypesPage({super.key, required this.showMathQuestions});
+
+  @override
+  _QuestionTypesPageState createState() => _QuestionTypesPageState();
+}
+
+class _QuestionTypesPageState extends State<QuestionTypesPage> {
+  late List<String> questionTypes;
+  late List<String> filteredQuestionTypes;
+  final TextEditingController searchController = TextEditingController();
 
   static const List<String> verbalQuestionTypes = [
     'Central Ideas and Details',
@@ -41,32 +50,81 @@ class QuestionTypesPage extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
-    List<String> questionTypes =
-        showMathQuestions ? mathQuestionTypes : verbalQuestionTypes;
+  void initState() {
+    super.initState();
+    questionTypes =
+        widget.showMathQuestions ? mathQuestionTypes : verbalQuestionTypes;
+    filteredQuestionTypes = questionTypes;
+    searchController.addListener(_filterQuestionTypes);
+  }
 
+  void _filterQuestionTypes() {
+    setState(() {
+      filteredQuestionTypes = questionTypes
+          .where((type) =>
+              type.toLowerCase().contains(searchController.text.toLowerCase()))
+          .toList();
+    });
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Question Types'),
+        title: Text(widget.showMathQuestions
+            ? 'Math Question Types'
+            : 'Verbal Question Types'),
       ),
-      body: Container(
-        padding: EdgeInsets.all(10),
-        child: ListView.builder(
-          itemCount: questionTypes.length,
-          itemBuilder: (BuildContext context, int index) {
-            return ListTile(
-              title: Text(questionTypes[index]), //это короче название типа
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        QuestionPage(questionType: questionTypes[index]),
-                  ),
-                );
-              },
-            );
-          },
+      body: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          children: [
+            // Search Bar
+            TextField(
+              controller: searchController,
+              decoration: InputDecoration(
+                hintText: 'Search',
+                prefixIcon: Icon(Icons.search),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            SizedBox(height: 10),
+            // Sub-category List
+            Expanded(
+              child: ListView.separated(
+                itemCount: filteredQuestionTypes.length,
+                separatorBuilder: (BuildContext context, int index) =>
+                    Divider(),
+                itemBuilder: (BuildContext context, int index) {
+                  return ListTile(
+                    title: Text(
+                      filteredQuestionTypes[index],
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    trailing: Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => QuestionPage(
+                            questionType: filteredQuestionTypes[index],
+                            showMathQuestions: widget.showMathQuestions,
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

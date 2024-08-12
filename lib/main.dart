@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sat_app/pages/base_page.dart';
+import 'package:sat_app/pages/practice_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -19,7 +20,7 @@ class MyApp extends StatelessWidget {
             seedColor: const Color.fromARGB(255, 97, 184, 255)),
         useMaterial3: true,
       ),
-      home: BasePage(),
+      home: PracticePage(),
     );
   }
 }

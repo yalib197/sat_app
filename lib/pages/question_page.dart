@@ -1,11 +1,12 @@
-// ignore_for_file: prefer_const_constructors
-
 import 'package:flutter/material.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:sat_app/pages/calculator_page.dart';
 
 class QuestionPage extends StatefulWidget {
-  final String
-      questionType; // Эту переменную юзаешь короче чтобы отправить тип вопроса который нужен
-  const QuestionPage({super.key, required this.questionType});
+  final String questionType;
+  final bool showMathQuestions;
+  const QuestionPage(
+      {super.key, required this.questionType, required this.showMathQuestions});
 
   @override
   State<QuestionPage> createState() => _QuestionPageState();
@@ -13,82 +14,44 @@ class QuestionPage extends StatefulWidget {
 
 class _QuestionPageState extends State<QuestionPage> {
   Map<String, String> answers = {
-    //замени на варианты ответа
     'A': 'writers',
     'B': 'writers,',
     'C': 'writers—',
     'D': 'writers;'
   };
-  /* 
-  Future<void> fetchQuestion(int questionId) async {
-    try {
-      final response = await http
-          .get(Uri.parse('http://192.168.0.101:5000/get/$questionId'));
 
-      if (response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body);
-        setState(() {
-          questionText = jsonData['text'];
-          correctAnswer = jsonData['correct_answer'];
-          answerChoices = jsonDecode(jsonData['answer_choices']);
-        });
-      } else {
-        throw Exception('Failed to load question');
-      }
-    } catch (e) {
-      print('Error fetching question: $e');
-      // Обработка ошибки, например, показ сообщения об ошибке пользователю
-    }
-  }
-  */
-  String correctAnswer = "A"; // замени на правильный ответ
-  // string that store questions
-  String questionText = // замени на вопрос
+  String correctAnswer = "A";
+  String questionText =
       '''Generations of mystery and horror __ have been inﬂuenced by the dark, gothic stories of celebrated American author
 Edgar Allan Poe (1809–1849).
 
 Which choice completes the text so that it conforms to the conventions of Standard English?''';
-  String explanation = // замени на обьяснение
+  String explanation =
       '''Choice A is the best answer. The convention being tested is punctuation between a subject and a verb. When, as in this
 case, a subject (“Generations of mystery and horror writers”) is immediately followed by a verb (“have been influenced”),
 no punctuation is needed.
 Choice B is incorrect because no punctuation is needed between the subject and the verb. Choice C is incorrect because
 no punctuation is needed between the subject and the verb. Choice D is incorrect because no punctuation is needed
 between the subject and the verb.''';
+
+  bool showBottomNavBar = false;
+  String? selectedAnswer;
+  String? clickedAnswer;
+  bool isHintVisible = false;
+  late Future<String?> _hint;
+
+  @override
+  void initState() {
+    super.initState();
+    _hint = getHint(questionText, answers, correctAnswer, explanation);
+  }
+
   void checkAnswer(String selectedAnswer) {
-    bool isCorrect = correctAnswer == selectedAnswer;
-    String resultText = isCorrect ? 'Correct!' : 'Wrong!';
     setState(() {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text(resultText),
-            content: Text(
-              isCorrect ? 'Good job!' : 'Try again next time.',
-            ),
-            actions: <Widget>[
-              Row(
-                children: [
-                  TextButton(
-                    child: Text('Explanation'),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      showExplanation();
-                    },
-                  ),
-                  TextButton(
-                    child: Text('OK'),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ],
-              ),
-            ],
-          );
-        },
-      );
+      clickedAnswer = selectedAnswer;
+      if (selectedAnswer == correctAnswer) {
+        showBottomNavBar = true;
+      }
     });
   }
 
@@ -114,6 +77,42 @@ between the subject and the verb.''';
     );
   }
 
+  Future<String?> getHint(String questionText, Map<String, String> answers,
+      String correctAnswer, String explanation) async {
+    const apiKey = 'AIzaSyB6prcI20F-NxcM4U62L3ti9H_pck9JlAY';
+    final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey);
+    final content = [
+      Content.text(
+          '''Give me a hint to this question using this information. Also in your message show just hint itself.
+          here is question
+          $questionText 
+          here are possible answers
+          $answers
+          here is the correct answer
+          $correctAnswer
+          and here is the explanation
+          $explanation
+          ''')
+    ];
+    final response = await model.generateContent(content);
+    return response.text;
+  }
+
+  Widget showCalculator(bool showMathQuestions) {
+    if (showMathQuestions) {
+      return (IconButton(
+        icon: Icon(Icons.calculate),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => CalculatorPage()),
+          );
+        },
+      ));
+    }
+    return SizedBox.shrink();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,49 +120,94 @@ between the subject and the verb.''';
         title: Text('Question'),
         elevation: 0,
         centerTitle: true,
-        toolbarHeight: 40, // Adjust the height as needed
+        toolbarHeight: 40,
         actions: [
           IconButton(
             icon: Icon(Icons.help_outline),
             onPressed: () {
-              // Handle help icon button press (e.g., show help dialog)
+              setState(() {
+                isHintVisible = !isHintVisible;
+              });
             },
           ),
           IconButton(
             icon: Icon(Icons.info_outline),
             onPressed: () {
-              showExplanation(); // Show explanation dialog when pressed
+              showExplanation();
             },
           ),
-          IconButton(
-            icon: Icon(Icons.arrow_right),
-            onPressed: () {
-              //TODo Сделай короче тут функцию которая перекидывает в след вопрос
-            },
-          ),
+          showCalculator(widget.showMathQuestions),
         ],
       ),
       body: Column(
         children: [
           Expanded(
-            flex: 1, // Higher row takes 3 parts of the available space
+            flex: 1,
             child: SingleChildScrollView(
               child: Padding(
                   padding: EdgeInsets.all(8.0),
-                  child: Text(
-                    questionText,
-                    style: TextStyle(fontSize: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        questionText,
+                        style: TextStyle(fontSize: 16.0),
+                      ),
+                      SizedBox(height: 16),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            isHintVisible = !isHintVisible;
+                          });
+                        },
+                        child: Text(
+                          "Show Hint",
+                          style: TextStyle(
+                            fontSize: 16.0,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ),
+                      if (isHintVisible)
+                        FutureBuilder<String?>(
+                          future: _hint,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return CircularProgressIndicator();
+                            } else if (snapshot.hasError) {
+                              return Text("Error loading hint");
+                            } else {
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                  snapshot.data ?? "No hint available",
+                                  style: TextStyle(
+                                      fontSize: 14.0, color: Colors.black87),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                    ],
                   )),
             ),
           ),
           Expanded(
-            flex: 1, // Lower row takes 1 part of the available space
+            flex: 1,
             child: ListView.builder(
-              itemCount: answers.keys
-                  .toList()
-                  .length, // Number of items based on the keys length
+              itemCount: answers.keys.length,
               itemBuilder: (context, index) {
                 String key = answers.keys.toList()[index];
+                Color borderColor = Colors.black;
+
+                if (clickedAnswer != null) {
+                  if (key == clickedAnswer) {
+                    borderColor =
+                        key == correctAnswer ? Colors.green : Colors.red;
+                  }
+                }
+
                 return Padding(
                   padding: EdgeInsets.all(8.0),
                   child: ElevatedButton(
@@ -171,25 +215,24 @@ between the subject and the verb.''';
                       checkAnswer(key);
                     },
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context)
+                          .scaffoldBackgroundColor, // Match background color
                       padding: EdgeInsets.all(14.0),
-                      backgroundColor: Colors.blue,
                       textStyle: TextStyle(fontSize: 16.0),
                       minimumSize: Size(double.infinity, 50.0),
+                      side: BorderSide(
+                          color: borderColor, width: 2.0), // Add border color
                     ),
                     child: Row(
                       children: [
                         Container(
                           width: 40.0,
                           height: 40.0,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: const Color.fromARGB(255, 97, 184, 255),
-                          ),
                           child: Center(
                             child: Text(
                               key,
                               style: TextStyle(
-                                color: Colors.white,
+                                color: const Color.fromARGB(255, 0, 0, 0),
                                 fontSize: 20.0,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -203,6 +246,7 @@ between the subject and the verb.''';
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
                             maxLines: 3,
+                            style: TextStyle(color: Colors.black),
                           ),
                         ),
                       ],
@@ -214,6 +258,29 @@ between the subject and the verb.''';
           ),
         ],
       ),
+      bottomNavigationBar: showBottomNavBar
+          ? BottomNavigationBar(
+              items: [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.info),
+                  label: 'Explanation',
+                  backgroundColor: Colors.blue,
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.arrow_forward),
+                  label: 'Next',
+                  backgroundColor: Colors.blue,
+                ),
+              ],
+              onTap: (index) {
+                if (index == 0) {
+                  showExplanation();
+                } else {
+                  // Implement the functionality for 'Next' button
+                }
+              },
+            )
+          : null,
     );
   }
 }
