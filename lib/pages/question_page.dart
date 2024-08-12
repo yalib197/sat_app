@@ -79,7 +79,7 @@ between the subject and the verb.''';
 
   Future<String?> getHint(String questionText, Map<String, String> answers,
       String correctAnswer, String explanation) async {
-    const apiKey = 'AIzaSyB6prcI20F-NxcM4U62L3ti9H_pck9JlAY';
+    const apiKey = 'YOUR API KEY';
     final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey);
     final content = [
       Content.text(
