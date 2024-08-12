@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:sat_app/pages/calculator_page.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'calculator_page.dart';
 
 class QuestionPage extends StatefulWidget {
   final String questionType;
@@ -13,27 +15,10 @@ class QuestionPage extends StatefulWidget {
 }
 
 class _QuestionPageState extends State<QuestionPage> {
-  Map<String, String> answers = {
-    'A': 'writers',
-    'B': 'writers,',
-    'C': 'writers—',
-    'D': 'writers;'
-  };
-
-  String correctAnswer = "A";
-  String questionText =
-      '''Generations of mystery and horror __ have been inﬂuenced by the dark, gothic stories of celebrated American author
-Edgar Allan Poe (1809–1849).
-
-Which choice completes the text so that it conforms to the conventions of Standard English?''';
-  String explanation =
-      '''Choice A is the best answer. The convention being tested is punctuation between a subject and a verb. When, as in this
-case, a subject (“Generations of mystery and horror writers”) is immediately followed by a verb (“have been influenced”),
-no punctuation is needed.
-Choice B is incorrect because no punctuation is needed between the subject and the verb. Choice C is incorrect because
-no punctuation is needed between the subject and the verb. Choice D is incorrect because no punctuation is needed
-between the subject and the verb.''';
-
+  Map<String, String> answers = {};
+  String correctAnswer = "";
+  String questionText = "";
+  String explanation = "";
   bool showBottomNavBar = false;
   String? selectedAnswer;
   String? clickedAnswer;
@@ -43,7 +28,36 @@ between the subject and the verb.''';
   @override
   void initState() {
     super.initState();
+    fetchQuestion(widget.questionType);
     _hint = getHint(questionText, answers, correctAnswer, explanation);
+  }
+
+  Future<void> fetchQuestion(String questionType) async {
+    try {
+      final response = await http.get(Uri.parse('http://26.135.229.228:5000//get/random/list_type/$questionType'));
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+
+        setState(() {
+          questionText = jsonData['text'];
+          correctAnswer = jsonData['correct_answer'];
+          explanation = jsonData["rationale"];
+
+          var answerChoicesString = jsonData['answer_choices'];
+          answerChoicesString = answerChoicesString.replaceAll("'", "\"");
+          if (answerChoicesString.startsWith('"') && answerChoicesString.endsWith('"')) {
+            answerChoicesString = answerChoicesString.substring(1, answerChoicesString.length - 1);
+          }
+          Map<String, dynamic> tempMap = jsonDecode(answerChoicesString);
+          answers = tempMap.map((key, value) => MapEntry(key as String, value as String));
+        });
+      } else {
+        throw Exception('Failed to load question');
+      }
+    } catch (e) {
+      print('Error fetching question: $e');
+    }
   }
 
   void checkAnswer(String selectedAnswer) {
@@ -79,7 +93,7 @@ between the subject and the verb.''';
 
   Future<String?> getHint(String questionText, Map<String, String> answers,
       String correctAnswer, String explanation) async {
-    const apiKey = 'AIzaSyB6prcI20F-NxcM4U62L3ti9H_pck9JlAY';
+    const apiKey = 'AIzaSyBUf_m1Fe5_VhKoCZLoBfFjpfqj4rqLUXA';
     final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey);
     final content = [
       Content.text(
@@ -100,7 +114,7 @@ between the subject and the verb.''';
 
   Widget showCalculator(bool showMathQuestions) {
     if (showMathQuestions) {
-      return (IconButton(
+      return IconButton(
         icon: Icon(Icons.calculate),
         onPressed: () {
           Navigator.push(
@@ -108,7 +122,7 @@ between the subject and the verb.''';
             MaterialPageRoute(builder: (context) => CalculatorPage()),
           );
         },
-      ));
+      );
     }
     return SizedBox.shrink();
   }
@@ -216,12 +230,12 @@ between the subject and the verb.''';
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context)
-                          .scaffoldBackgroundColor, // Match background color
+                          .scaffoldBackgroundColor,
                       padding: EdgeInsets.all(14.0),
                       textStyle: TextStyle(fontSize: 16.0),
                       minimumSize: Size(double.infinity, 50.0),
                       side: BorderSide(
-                          color: borderColor, width: 2.0), // Add border color
+                          color: borderColor, width: 2.0),
                     ),
                     child: Row(
                       children: [
